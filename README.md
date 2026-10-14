@@ -3,7 +3,7 @@ Starting with our target (in this case: 10.129.229.56)
 
 
 ### Recon / Scanning 
-`sudo nmap -sC -sV -sT -Pn 10.10.11.222 -oA nmap_Authority`
+`sudo nmap -sC -sV -sT -Pn 10.129.229.56 -oA nmap_Authority`
 
 ```
 -sC: Script scan
