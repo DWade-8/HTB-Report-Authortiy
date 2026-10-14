@@ -4,10 +4,15 @@ Starting with our target (in this case: 10.129.229.56)
 
 ### Recon / Scanning 
 ```sudo nmap -sC -sV -sT -Pn 10.10.11.222 -oA nmap_Authority```
+
 `-sC: Script scan`
+
 `-sV: Version Scan`
+
 `-sT (or -sS for "stealthier"): TCP Connect Scan`
+
 `-Pn: Disable pinging (host discovery)`
+
 `-oA: Output all formats` 
 
 The scan returns back an abundance of ports: 
@@ -83,7 +88,8 @@ We can infer from these ports (notably: 88, 135, 389, 5985) that this is a windo
 For enumerating the services, I like to typically look at the **SMB share (445), Domain Name System (53), and the Website (80)**.
 
 Using NetExec, we can poke at the SMB share with: ```netexec smb 10.129.229.56```
-```SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)```
+
+Results: ```SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)```
 
 The scan returns the Netbios hostname (**AUTHORITY**), the domain name (**authority.htb**), Null authentication (**true**).
 
