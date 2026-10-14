@@ -89,11 +89,14 @@ For enumerating the services, I like to typically look at the **SMB share (445),
 
 Using NetExec, we can poke at the SMB share with: ```netexec smb 10.129.229.56```
 
-Results: ```SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)```
+Results: 
+```SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)```
 
 The scan returns the Netbios hostname (**AUTHORITY**), the domain name (**authority.htb**), Null authentication (**true**).
 
-Further attempt to enumerate netexec: ```netexec smb 10.129.229.56 -u '' -p '' --shares``` and ```netexec smb 10.129.229.56 --shares``` return "Error enumerating shares: STATUS_ACCESS_DENIED" and "Error enumerating shares: STATUS_USER_SESSION_DELETED" respectively. 
+Further attempt to enumerate netexec: ```netexec smb 10.129.229.56 -u '' -p '' --shares``` and ```netexec smb 10.129.229.56 --shares``` return 
+
+```"Error enumerating shares: STATUS_ACCESS_DENIED" --- "Error enumerating shares: STATUS_USER_SESSION_DELETED" respectively.``` respectively.
 
 Trying a random username shows that Guest login is enabled: ```netexec smb 10.129.229.56 -u 'guest' -p '' --shares``` returns: 
 ```
