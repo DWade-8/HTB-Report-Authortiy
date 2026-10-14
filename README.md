@@ -4,11 +4,11 @@ Starting with our target (in this case: 10.129.229.56)
 
 ### Recon / Scanning 
 ```sudo nmap -sC -sV -sT -Pn 10.10.11.222 -oA nmap_Authority```
--sC: Script scan
--sV: Version Scan
--sT (or -sS for "stealthier"): TCP Connect Scan
--Pn: Disable pinging (host discovery)
--oA: Output all formats 
+`-sC: Script scan`
+`-sV: Version Scan`
+`-sT (or -sS for "stealthier"): TCP Connect Scan`
+`-Pn: Disable pinging (host discovery)`
+`-oA: Output all formats` 
 
 The scan returns back an abundance of ports: 
 
@@ -128,3 +128,5 @@ Moving on to the webpage on port 80 which loads the default IIS page. Trying to 
 
 Earlier I mentioned how PWM sits on port 8443- so we can try to connect with http://authority.htb:8843/, we get an error "Bad request, requires TLS"... So then we can add https to the URL and we get access to a login page.
 
+
+To be continued..
