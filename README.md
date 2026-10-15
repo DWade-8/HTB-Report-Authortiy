@@ -122,14 +122,14 @@ Some interesting SMB shares namely: Department shares and Development, but we on
 We can connect to the Development share using: `smbclient \\10.129.229.56\Development --no-pass`
 
 
-Success! Inside of the directory: **`Automation/Ansible/`** we can see a couple directories: `ADCS, LDAP, PWM, SHARE`. Each contained an Ansible setup configuration inside. Using these we can get specific version numbers that may be valuable in the future- Ansble verison 2.10. There is so much information in the shares: `\automation\ansible\PWM\templates\tomcat-users.xml.j2` give a user: `"admin"/"T0mc@tAdm1n" and "robot" password="T0mc@tR00t"`.
+Success! Inside of the directory: **`Automation/Ansible/`** we can see a couple directories: `ADCS, LDAP, PWM, SHARE`. Each contained an Ansible setup configuration inside. Using these we can get specific version numbers that may be valuable in the future- `Ansble verison 2.10`. There is so much information in the shares: `\automation\ansible\PWM\templates\tomcat-users.xml.j2` give a user: `"admin"/"T0mc@tAdm1n" and "robot" password="T0mc@tR00t"`.
 
 Looking up PWM, we see it is "`an open source password self-service application for LDAP directories.`" Going thru the Github we can see that it defaults to port 8443, which surprisingly we have here.
 
 
 Inside of **`/PWM/ansible_inventory`** and **`defaults/main.yml`** we find: `administrator:Welcome1` and hashvalues for the `LDAP/PWM`. This is also alongside `authority.htb.corp` which we can add.
 
-Trying to crack it with: `hashcat -m 16900 -a 0 hash.txt /usr/share/wordlist/rockyou.txt`
+There is tons of information in the SMB share like different versions for the different running software, make sure to check thru these to identify the layout of Ansible, LDAP, etc.. 
 
 Inside of `\Automation\Ansible\PWM\defaults\` there is a `main.yml` 
 ```
@@ -168,6 +168,15 @@ ldap_admin_password: !vault |
           3238343230333633350a646664396565633037333431626163306531336336326665316430613566
           3764
 ```
+We can see the encryption type: `Ansible Value;1.1;AES 256`, going to hashcat website we can see that `mode 16900` can be used to decrypt these hashes (obviously if the wordlists we use have them).
+
+[How to crack Ansible passwords.](https://www.bengrewell.com/cracking-ansible-vault-secrets-with-hashcat/)
+
+Not trying to crack it with: `hashcat -m 16900 -a 0 hash.txt /usr/share/wordlist/rockyou.txt`
+
+
+
+
 
 ## Web Page
 
