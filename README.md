@@ -83,8 +83,39 @@ Host script results:
 |   date: 2026-10-14T19:23:04
 |_  start_date: N/A
 ```
+What we learn from this scan: 
 
-We can infer from these ports (notably: 88, 135, 389, 5985) that this is a windows Domain Controller, running a website on port 80. Also running Tomcat, Java-based web applications. 
+`53`: Used to translate URLs into IPs- the browser sends requests to this port it doesn't already know the URL-to-IP. 
+
+`80`: Most likely a HTTP IIS webserver. 
+
+`88 Kerberos`: Used for Kerberos authentication to an Active Directory.
+`464`: Kerberos password resetting and password operations. 
+
+`135 MSRPC/RPC`: Helps Windows with locating Remote Procedures Calls, used for internal Windows communications and remote administration. 
+
+`139 NetBIOS-SSN`: Legacy windows networking and session services.
+
+`389 LDAP`: LDAP used for Active directory queries and domain enumeration.  
+
+`445 SMB`: File shares, domain information, and file accessibility.
+
+`636 LDAPS`: LDAP over TLS encryption.  
+
+`3268 LDAP Global Catalog`: Directory searches across an Active Directory forest.
+
+`3269 Global Catalog TLS`: Enrypted Global Catalog Access
+
+`5985 WinRM over HTTP`: Windows Remote Management, authenticaton and authorization.
+
+`8443 Tomcat/HTTPS`: An alternative web service. 
+
+
+
+We can infer from these ports (notably: 88, 135, 389, 5985) that this is a `Windows Active Directory Domain Controller`, running a website on port 80, LDAP, some sort of Tomcat on 8443 (Java-based web applications). 
+
+
+
 
 ### Next-step Enumeration
 
@@ -124,7 +155,7 @@ We can connect to the Development share using: `smbclient \\10.129.229.56\Develo
 
 Success! Inside of the directory: **`Automation/Ansible/`** we can see a couple directories: `ADCS, LDAP, PWM, SHARE`. Each contained an Ansible setup configuration inside. Using these we can get specific version numbers that may be valuable in the future- `Ansble verison 2.10`. There is so much information in the shares: `\automation\ansible\PWM\templates\tomcat-users.xml.j2` give a user: `"admin"/"T0mc@tAdm1n" and "robot" password="T0mc@tR00t"`.
 
-Looking up PWM, we see it is "`an open source password self-service application for LDAP directories.`" Going thru the Github we can see that it defaults to port 8443, which surprisingly we have here.
+Looking up PWM, we see it is "`an open source password self-service application for LDAP directories.`" Going thru the [GitHub](https://github.com/pwm-project/pwm) we can see that it defaults to port 8443, running Tomcat as its container,
 
 
 Inside of **`/PWM/ansible_inventory`** and **`defaults/main.yml`** we find: `administrator:Welcome1` and hashvalues for the `LDAP/PWM`. This is also alongside `authority.htb.corp` which we can add.
@@ -172,7 +203,7 @@ We can see the encryption type: `Ansible Value;1.1;AES 256`, going to hashcat we
 
 [How to crack Ansible passwords.](https://www.bengrewell.com/cracking-ansible-vault-secrets-with-hashcat/)
 
-Not trying to crack it with: `hashcat -m 16900 -a 0 hash.txt /usr/share/wordlist/rockyou.txt`
+Trying to crack it with: `hashcat -m 16900 -a 0 hash.txt /usr/share/wordlist/rockyou.txt`
 
 
 
