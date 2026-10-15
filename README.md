@@ -112,16 +112,65 @@ What we learn from this scan:
 
 
 
-We can infer from these ports (notably: 88, 135, 389, 5985) that this is a `Windows Active Directory Domain Controller`, running a website on port 80, LDAP, some sort of Tomcat on 8443 (Java-based web applications). 
+We can infer from these ports (notably: `88, 135, 389, 464, 3267, 3269, 5985`) that this is a `Windows Active Directory Domain Controller`, running a **website** on `port 80`, **LDAP**, and some sort of **Tomcat webpage** on 8443 (Java-based web applications). 
 
 
 
 
 ### Next-step Enumeration
 
-For enumerating the services, I like to typically look at the **SMB share (445), Domain Name System (53), and the Website (80)**.
+For enumerating the services, I like to typically look at the **SMB share (445) and the Website (80)**.
 
-Using NetExec, we can poke at the SMB share with: `netexec smb 10.129.229.56`
+
+
+Though I would also like to take a look at DNS (`port 53`to see if there is any domain information.)
+Trying commands like (If you don't have authority.htb added to `/etc/hosts` then use the IP alongside the domain):
+
+`dig authority.htb` Which returns nothing particular.
+
+`dig @10.129.229.56 authority.htb NS` returns: 
+
+```
+; <<>> DiG 9.20.29-1-Debian <<>> @10.129.229.56 authority.htb NS
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 51666
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 3
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4000
+;; QUESTION SECTION:
+;authority.htb.			IN	NS
+
+;; ANSWER SECTION:
+authority.htb.		3600	IN	NS	authority.authority.htb.
+
+;; ADDITIONAL SECTION:
+authority.authority.htb. 3600	IN	A	10.129.229.56
+authority.authority.htb. 3600	IN	AAAA	dead:beef::271f:6abf:e52f:68e
+
+;; Query time: 128 msec
+;; SERVER: 10.129.229.56#53(10.129.229.56) (UDP)
+;; WHEN: Thu Oct 15 08:18:07 MST 2026
+;; MSG SIZE  rcvd: 110
+```
+the name server: `authority.authority.htb`.
+
+Possible additional basic networking information: `nslookup authority.htb 10.129.229.56`
+
+We can see try DNS zone transferring for additional records: `dig @10.129.229.56 authority.htb AXFR`
+```
+; <<>> DiG 9.20.29-1-Debian <<>> @10.129.229.56 authority.htb AXFR
+; (1 server found)
+;; global options: +cmd
+; Transfer failed.
+```
+Failed.
+
+More things can be tried like testing to see if we can check Active Directory or LDAP records, but I'm going to move on to SMB. 
+
+Using `NetExec`, we can poke at the SMB share with: `netexec smb 10.129.229.56`
 
 Results: 
 ```
