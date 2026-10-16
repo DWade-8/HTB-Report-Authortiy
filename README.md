@@ -2,7 +2,7 @@
 Starting with our target (in this case: 10.129.229.56)
 
 
-### Recon / Scanning 
+### Active Recon / Scanning 
 `sudo nmap -sC -sV -sT -Pn 10.129.229.56 -oA nmap_Authority`
 
 ```
@@ -98,7 +98,7 @@ What we learn from this scan:
 
 `389 LDAP`: LDAP used for Active directory queries and domain enumeration.  
 
-`445 SMB`: File shares, domain information, and file accessibility.
+`445 SMB`: Server Messaging Block- A File share server with domain information and file accessibility.
 
 `636 LDAPS`: LDAP over TLS encryption.  
 
@@ -117,11 +117,11 @@ We can infer from these ports (notably: `88, 135, 389, 464, 3267, 3269, 5985`) t
 
 
 
-### Next-step Enumeration
+## Enumeration
 
 For enumerating the services, I like to typically look at the **SMB share (445) and the Website (80)**.
 
-
+### Domain Name Server (DNS)
 
 Though I would also like to take a look at DNS (`port 53`to see if there is any domain information.)
 Trying commands like (If you don't have authority.htb added to `/etc/hosts` then use the IP alongside the domain):
@@ -168,20 +168,30 @@ We can see try DNS zone transferring for additional records: `dig @10.129.229.56
 ```
 Failed.
 
-More things can be tried like testing to see if we can check Active Directory or LDAP records, but I'm going to move on to SMB. 
+More things can be tried like testing to see if we can check Active Directory or LDAP records, but I'm moving on to SMB. 
 
-Using `NetExec`, we can poke at the SMB share with: `netexec smb 10.129.229.56`
+### Server Messaging Block (SMB)
+
+Server Messaging Block is an network communication protocol used to read/write messages over the network, on top of the TCP/IP protocol. SMB on port 445 connects directly to the SMB service over TCP, unlike TCP port 139 which uses NetBIOS for name resolution and session transport. 
+
+Checking for additional information on these two ports: `sudo nmap -sV -p 139,445 10.129.229.56`- nothing new.
+
+Using `NetExec` (`nxt`), we can poke at the SMB share with: `netexec smb 10.129.229.56`
 
 Results: 
 ```
 SMB         10.129.229.56   445    AUTHORITY        [*] Windows 10 / Server 2019 Build 17763 x64 (name:AUTHORITY) (domain:authority.htb) (signing:True) (SMBv1:None) (Null Auth:True)
 ```
 
-The scan returns the Netbios hostname (**`AUTHORITY`**), the domain name (**`authority.htb`**), Null authentication (**`Null Auth:True`**).
+From this scan, information returned includes: the Netbios hostname (**`AUTHORITY`**), the domain name (**`authority.htb`**), Null authentication (**`Null Auth:True`**).
+
+With this information, add it to `/etc/hosts`, and then try to see if Null Authentication works for us- for null authentication it's important to note that it may either be no credentials or anonymous login.  
 
 Further attempt to enumerate netexec: `netexec smb 10.129.229.56 -u '' -p '' --shares` and `netexec smb 10.129.229.56 --shares` return 
 
 ```"Error enumerating shares: STATUS_ACCESS_DENIED" --- "Error enumerating shares: STATUS_USER_SESSION_DELETED" respectively.``` respectively.
+
+Since these both failed, anonymous login can be tried: `anonymous:''` Though in reality any username will work.
 
 Trying a random username shows that Guest login is enabled: `netexec smb 10.129.229.56 -u 'guest' -p '' --shares` returns: 
 ```
@@ -197,10 +207,20 @@ SMB         10.129.229.56   445    AUTHORITY        IPC$            READ        
 SMB         10.129.229.56   445    AUTHORITY        NETLOGON                        Logon server share 
 SMB         10.129.229.56   445    AUTHORITY        SYSVOL                          Logon server share
 ```
-Some interesting SMB shares namely: Department shares and Development, but we only have access to Development and IPC$.
+Now we have access to some interesting SMB shares, namely: **`Department shares`** and **`Development`**, but we only have access to **`Development`** and `**IPC$**`.
+IPC$ is a default share used for remote administration and inter-communications.
 
-We can connect to the Development share using: `smbclient \\10.129.229.56\Development --no-pass`
+ With this information, we can attempt to connect to the Development share using: `smbclient \\10.129.229.56\Development --no-pass`
+```
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Fri Mar 17 06:20:38 2023
+  ..                                  D        0  Fri Mar 17 06:20:38 2023
+  Automation                          D        0  Fri Mar 17 06:20:40 2023
 
+		5888511 blocks of size 4096. 1163812 blocks available
+smb: \> 
+```
 
 Success! Inside of the directory: **`Automation/Ansible/`** we can see a couple directories: `ADCS, LDAP, PWM, SHARE`. Each contained an Ansible setup configuration inside. Using these we can get specific version numbers that may be valuable in the future- `Ansble verison 2.10`. There is so much information in the shares: `\automation\ansible\PWM\templates\tomcat-users.xml.j2` give a user: `"admin"/"T0mc@tAdm1n" and "robot" password="T0mc@tR00t"`.
 
