@@ -301,6 +301,10 @@ pwm_login_vault:$ansible$0*0*2fe48d56e7e16f71c18abd22085f39f4fb11a2b9a456cf4b72e
 ```
 `!@#$%^&` is the Vault password. 
 
+Now with the vault password we can use the command "ansible-vaut view credential.yml" file, and after inputting the vault password we get:
+
+to be continued....
+
 
 
 ## Web Page
